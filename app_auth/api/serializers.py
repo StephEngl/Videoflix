@@ -46,3 +46,23 @@ class RegistrationSerializer(serializers.ModelSerializer):
         account.set_password(self.validated_data['password'])
         account.save()
         return account
+    
+class LoginSerializer(TokenObtainPairSerializer):
+    """JWT token serializer with custom error handling."""
+    
+    def validate(self, attrs):
+        try:
+            data = super().validate(attrs)
+            data['user'] = self.get_user_data()
+            data['detail'] = 'Login successfully!'
+            return data
+        except Exception:
+            raise serializers.ValidationError("Incorrect username or password.")
+        
+    def get_user_data(self):
+        """Get formatted user data for the response."""
+        return {
+            "id": self.user.pk,
+            "username": self.user.username,
+            "email": self.user.email,
+        }
