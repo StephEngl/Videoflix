@@ -27,9 +27,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Email is already in use.")
         return value
 
-    def save(self):
-        # Generate username from email (part before @ symbol)
-        email = self.validated_data['email']
+    def create(self, validated_data):
+        validated_data.pop('confirmed_password')
+        
+        # Generate username from email
+        email = validated_data['email']
         base_username = email.split('@')[0]
         
         # Ensure username is unique
@@ -39,14 +41,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
             username = f"{base_username}{counter}"
             counter += 1
         
-        account = User(
+        # Create inactive user
+        user = User.objects.create_user(
             username=username,
-            email=email
+            email=email,
+            password=validated_data['password'],
+            is_active=False
         )
-        account.set_password(self.validated_data['password'])
-        account.save()
-        return account
-    
+        return user
+
+
 class LoginSerializer(TokenObtainPairSerializer):
     """JWT token serializer with custom error handling."""
     
