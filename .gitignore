@@ -1,6 +1,8 @@
 # Python virtual environment
 env/
 venv/
+media/
+static/
 
 # Environment variables
 .env
