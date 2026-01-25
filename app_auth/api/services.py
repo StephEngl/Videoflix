@@ -61,7 +61,7 @@ class AuthService:
             if default_token_generator.check_token(user, token):
                 user.is_active = True
                 user.save()
-                return {'success': True, 'message': 'Account activated successfully!'}
+                return {'success': True, 'message': 'Account successfully activated.'}
             else:
                 return {'success': False, 'error': 'Invalid activation link.'}
                 
