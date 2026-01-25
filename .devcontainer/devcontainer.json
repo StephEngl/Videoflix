@@ -1,0 +1,37 @@
+{
+    "name": "Videoflix",
+    "dockerComposeFile": [
+        "../docker-compose.yml",
+        "../docker-compose.development-override.yml"
+    ],
+    "service": "web",
+    "workspaceFolder": "/app",
+    "remoteUser": "root",
+    "shutdownAction": "none",
+    "features": { "ghcr.io/devcontainers/features/git": {} },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.debugpy",
+                "ms-azuretools.vscode-docker"
+            ]
+        }
+    },
+    "forwardPorts": [
+        8000,
+        "db:5432",
+        "redis:6379"
+    ],
+    "portsAttributes": {
+        "8000": {
+            "label": "Videoflix Django App"
+        },
+        "db:5432": {
+            "label": "PostgreSQL DB Instance"
+        },
+        "redis:6379": {
+            "label": "Redis Cache Instance"
+        }
+    }
+}
