@@ -1,0 +1,7 @@
+text eol=lf
+
+*.py text=lf
+*.html text=lf
+*.css text=lf
+*.json text=lf
+*.md text=lf
