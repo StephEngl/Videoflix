@@ -1,8 +1,11 @@
-from rest_framework import status
+from rest_framework import status, exceptions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import RegistrationSerializer, LoginSerializer
-from .services import EmailService, AuthService
+from ..services import EmailService, AuthService
+from ..authentication import CookieJWTAuthentication
 
 
 class RegistrationView(APIView):
@@ -46,3 +49,32 @@ class LoginView(APIView):
             return Response(serializer.validated_data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class LogoutView(APIView):
+    """POST /api/logout/"""
+    """API view for user logout.
+    
+    Clears JWT tokens from HttpOnly cookies to securely
+    log out the authenticated user.
+    """
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+        access_token = request.COOKIES.get("access_token")
+
+        if not refresh_token and not access_token:
+            return Response(
+                {"error": "User is not logged in. No tokens found."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        response = Response(
+            {"detail": "Logout successful! All Tokens will be deleted. Refresh token is now invalid."},
+            status=status.HTTP_200_OK
+        )
+        response.delete_cookie('refresh_token')
+        response.delete_cookie('access_token')
+        return response
