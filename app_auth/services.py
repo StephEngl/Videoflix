@@ -18,7 +18,7 @@ class EmailService:
         activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}/"
         
         # Render HTML template
-        html_content = render_to_string('app_auth/confirm_email.html', {
+        html_content = render_to_string('app_auth/templates/confirm_email.html', {
             'username': user.username,
             'activation_link': activation_link,
         })
