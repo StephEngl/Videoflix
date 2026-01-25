@@ -1,9 +1,12 @@
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
 from django.conf import settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class EmailService:
     @staticmethod
@@ -45,3 +48,22 @@ class EmailService:
         email_message.send(fail_silently=False)
         
         return token
+    
+
+class AuthService:
+    @staticmethod
+    def activate_user(uidb64, token):
+        """Activate user account with token validation."""
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+            
+            if default_token_generator.check_token(user, token):
+                user.is_active = True
+                user.save()
+                return {'success': True, 'message': 'Account activated successfully!'}
+            else:
+                return {'success': False, 'error': 'Invalid activation link.'}
+                
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return {'success': False, 'error': 'Invalid activation link.'}
