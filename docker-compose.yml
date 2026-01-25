@@ -20,11 +20,12 @@ services:
     build:
       context: .
       dockerfile: backend.Dockerfile
+      target: production
     env_file: .env
     container_name: videoflix_backend
 
     volumes:
-      - .:/app
+      - ./:/app
       - videoflix_media:/app/media
       - videoflix_static:/app/static
     ports:
