@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirm your Videoflix email</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <header>
+        <tr>
+          <td
+            style="
+              padding: 40px 30px 20px;
+              text-align: center;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              border-radius: 8px 8px 0 0;
+              color: white;
+            "
+          >
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold">
+              Confirm your email
+            </h1>
+          </td>
+        </tr>
+      </header>
+
+      <main>
+        <tr>
+          <td style="padding: 40px 30px">
+            <img
+              src="assets/logo_icon.svg"
+              alt="Videoflix Logo"
+              style="
+                display: block;
+                width: 200px;
+                height: auto;
+                margin: 0 auto 30px;
+              "
+            />
+
+            <h2
+              style="
+                margin: 0 0 20px;
+                font-size: 24px;
+                color: #333;
+                font-weight: 600;
+              "
+            >
+              Dear {{ username }},
+            </h2>
+
+            <p
+              style="
+                margin: 0 0 30px;
+                font-size: 16px;
+                line-height: 1.6;
+                color: #555;
+              "
+            >
+              Thank you for registering at Videoflix! <br />
+              To complete your registration and verify your email address,
+              <strong>please click the link below:</strong>
+            </p>
+
+            <!-- Button -->
+            <div style="text-align: center; margin: 30px auto">
+              <a
+                href="{{ activation_link }}"
+                style="
+                  display: inline-block;
+                  padding: 18px 40px;
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  color: #ffffff !important;
+                  font-size: 18px;
+                  font-weight: 600;
+                  text-decoration: none;
+                  border-radius: 30px;
+                  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                "
+              >
+                Activate account
+              </a>
+            </div>
+
+            <p
+              style="
+                margin: 30px 0 0;
+                font-size: 14px;
+                color: #888;
+                line-height: 1.5;
+              "
+            >
+              If you didn't create this account, please disregard this email.
+            </p>
+          </td>
+        </tr>
+      </main>
+
+      <footer>
+        <tr>
+          <td
+            style="
+              padding: 30px;
+              text-align: center;
+              border-top: 1px solid #eee;
+              background-color: #f9f9f9;
+              border-radius: 0 0 8px 8px;
+              color: #777;
+              font-size: 14px;
+            "
+          >
+            <p style="margin: 0 0 10px">
+              Best regards<br /><strong>Your Videoflix Team</strong>
+            </p>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8">
+              © 2026 Videoflix. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </footer>
+    </table>
+  </body>
+</html>
