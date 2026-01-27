@@ -27,38 +27,19 @@
       "
     >
       <header>
-        <tr>
-          <td
-            style="
-              padding: 40px 30px 20px;
-              text-align: center;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              border-radius: 8px 8px 0 0;
-              color: white;
-            "
-          >
-            <h1 style="margin: 0; font-size: 28px; font-weight: bold">
-              Confirm your email
-            </h1>
-          </td>
-        </tr>
+        <img
+              src="cid:{{ logo_cid }}"
+              alt="Videoflix Logo"
+              aria-label="Videoflix company logo"
+              style="
+                display: block;
+                margin: 16px auto 40px;
+              "
+            />
       </header>
 
       <main>
-        <tr>
-          <td style="padding: 40px 30px">
-            <img
-              src="assets/logo_icon.svg"
-              alt="Videoflix Logo"
-              style="
-                display: block;
-                width: 200px;
-                height: auto;
-                margin: 0 auto 30px;
-              "
-            />
-
-            <h2
+        <h2
               style="
                 margin: 0 0 20px;
                 font-size: 24px;
@@ -83,19 +64,21 @@
             </p>
 
             <!-- Button -->
-            <div style="text-align: center; margin: 30px auto">
+            <div style="text-align: center; margin: 30px auto;">
               <a
                 href="{{ activation_link }}"
+                role="button"
+                aria-label="Activate your Videoflix account"
                 style="
                   display: inline-block;
-                  padding: 18px 40px;
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                  color: #ffffff !important;
+                  padding: 15px 30px;
+                  background-color: #667eea;
+                  color: #ffffff;
                   font-size: 18px;
-                  font-weight: 600;
+                  font-weight: bold;
                   text-decoration: none;
                   border-radius: 30px;
-                  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                  font-family: Arial, sans-serif;
                 "
               >
                 Activate account
@@ -112,31 +95,25 @@
             >
               If you didn't create this account, please disregard this email.
             </p>
-          </td>
-        </tr>
       </main>
 
       <footer>
-        <tr>
-          <td
-            style="
-              padding: 30px;
-              text-align: center;
-              border-top: 1px solid #eee;
-              background-color: #f9f9f9;
-              border-radius: 0 0 8px 8px;
-              color: #777;
-              font-size: 14px;
-            "
-          >
-            <p style="margin: 0 0 10px">
-              Best regards<br /><strong>Your Videoflix Team</strong>
-            </p>
-            <p style="margin: 0; font-size: 12px; opacity: 0.8">
-              © 2026 Videoflix. All rights reserved.
-            </p>
-          </td>
-        </tr>
+        <div style="
+          padding: 30px;
+          text-align: center;
+          border-top: 1px solid #eee;
+          background-color: #f9f9f9;
+          border-radius: 0 0 8px 8px;
+          color: #777;
+          font-size: 14px;
+        ">
+          <p style="margin: 0 0 10px">
+            Best regards<br /><strong>Your Videoflix Team</strong>
+          </p>
+          <p style="margin: 0; font-size: 12px; opacity: 0.8">
+                © 2026 Videoflix. All rights reserved.
+          </p>
+        </div>
       </footer>
     </table>
   </body>

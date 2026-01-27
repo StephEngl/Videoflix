@@ -1,0 +1,12 @@
+Confirm your email
+
+Dear {{username}},
+        
+Thank you for registering at Videoflix!
+Please click the following link to verify your email address and complete your registration:
+{{activation_link}}
+
+If you didn't create this account, please disregard this email.
+
+Best regards,
+Your Videoflix Team
