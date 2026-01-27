@@ -18,7 +18,7 @@ class EmailService:
         # Generate activation token
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}/"
+        activation_link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}/api/activate/{uid}/{token}/"
         
         # Content ID for embedded logo
         logo_cid = "logo"
