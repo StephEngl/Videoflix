@@ -13,6 +13,9 @@ db.sqlite3
 # IDE/project infos
 infos.txt
 
+# Test commands and management scripts
+app_auth/management/
+
 # __pycache__ und andere temporäre Dateien
 **/__pycache__/
 *.pyc
