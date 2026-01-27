@@ -5,9 +5,17 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.mail import send_mail
+from django.conf import settings
 from .serializers import RegistrationSerializer, LoginSerializer
 from ..services import EmailService, AuthService
 from ..authentication import CookieJWTAuthentication
+
+
+from app_auth.services import EmailService
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class RegistrationView(APIView):
@@ -150,3 +158,44 @@ class CookieTokenRefreshView(TokenRefreshView):
             secure=False,
             samesite='Lax',
         )
+
+
+class TestEmailView(APIView):
+    """Test email sending functionality."""
+    permission_classes = [AllowAny]  # Remove in production!
+    
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response(
+                {'error': 'Email address is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Create or get a test user for activation email
+            test_user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': f'testuser_{email.split("@")[0]}',
+                    'is_active': False
+                }
+            )
+            
+            # Send activation email using EmailService
+            token = EmailService.send_activation_email(test_user)
+            
+            return Response(
+                {
+                    'message': f'Activation email sent successfully to {email}',
+                    'user_created': created,
+                    'token': token  # Remove in production for security
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to send email: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
