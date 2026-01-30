@@ -57,8 +57,8 @@ class LoginSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         try:
             data = super().validate(attrs)
-            data['user'] = self.get_user_data()
             data['detail'] = 'Login successfully!'
+            data['user'] = self.get_user_data()
             return data
         except Exception:
             raise serializers.ValidationError("Incorrect username or password.")
@@ -68,5 +68,4 @@ class LoginSerializer(TokenObtainPairSerializer):
         return {
             "id": self.user.pk,
             "username": self.user.username,
-            "email": self.user.email,
         }
