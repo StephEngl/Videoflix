@@ -27,7 +27,6 @@ class EmailService:
             'username': user.username,
             'activation_link': activation_link,
             'logo_cid': logo_cid,
-            'base_url': settings.FRONTEND_URL,
         }
 
          # Plain text fallback
