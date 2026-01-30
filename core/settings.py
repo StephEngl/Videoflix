@@ -40,6 +40,9 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
 ]
 
+# Enable credentials for CORS (needed for cookies/auth)
+CORS_ALLOW_CREDENTIALS = True
+
 
 # Application definition
 
