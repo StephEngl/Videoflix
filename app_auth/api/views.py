@@ -18,29 +18,35 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+@extend_schema(
+    tags=['Authentication'],
+    description="Register a new user and send activation email.",
+    responses={
+        201: {'detail': 'Registration successful. Please check your email to activate your account.'},
+        400: OpenApiResponse(description="Bad Request - Invalid input data"),
+    }
+)
 class RegistrationView(APIView):
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
+
         if serializer.is_valid():
             user = serializer.save()
-
-            # Send activation email via service
-            token = EmailService.send_activation_email(user)
-
-            return Response({
-                'user': {
-                    'id': user.id,
-                    'email': user.email
-                },
-                'token': token
-            }, status=status.HTTP_201_CREATED)
-
-        # Token als HTTP-ONLY Cookie setzen (später)
-        # response.set_cookie('auth_token', token, httponly=True, secure=True)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            EmailService.send_activation_email(user)
+            return Response({'user': {'id': user.id, 'email': user.email}, 'message': 
+                             'Registration successful. Please check your email to activate your account.'}, status=status.HTTP_201_CREATED)
+        else:         
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=['Authentication'],
+    description="Activate user account via email link.",
+    responses={
+        200: {'message': 'Account successfully activated.'},
+        400: OpenApiResponse(description="Bad Request - Invalid activation link"),
+    }
+) 
 class ActivateAccountView(APIView):
     def get(self, request, uidb64, token):
         result = AuthService.activate_user(uidb64, token)
@@ -51,6 +57,14 @@ class ActivateAccountView(APIView):
             return redirect(f"{settings.FRONTEND_URL}?activation=error")
 
 
+@extend_schema(
+    tags=['Authentication'],
+    description="Obtain JWT tokens and set them in HttpOnly cookies.",
+    responses={
+        200: {'detail': 'Login successfully!'},
+        401: OpenApiResponse(description="Unauthorized - Invalid credentials"),
+    }
+)
 class LoginView(APIView):
     """POST /api/login/"""
     def post(self, request):
@@ -60,6 +74,7 @@ class LoginView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
 
 class LogoutView(APIView):
     """POST /api/logout/"""
