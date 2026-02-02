@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'django_rq',
     'app_auth',
+    'app_video',
 ]
 
 MIDDLEWARE = [
