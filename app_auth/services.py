@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-# from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -13,7 +12,7 @@ User = get_user_model()
 
 class EmailService:
     @staticmethod
-    def send_email(user, subject, text_template, html_template, url_pattern):
+    def send_email(user, subject, text_template, html_template, link):
         """
         Central function to send emails with token-based links.
         
@@ -22,19 +21,19 @@ class EmailService:
             subject: Email subject line
             text_template: Plain text template name
             html_template: HTML template name  
-            url_pattern: URL pattern with placeholders for uid and token
+            link: Complete URL link for the email
         """
         # Generate token and uid
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}{url_pattern.format(uid=uid, token=token)}"
+        # link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}{url_pattern.format(uid=uid, token=token)}"
         
         # Content ID for embedded logo
         logo_cid = "logo"
         context = {
             'username': user.username,
             'activation_link': link,  # Keep as activation_link for template compatibility
-            'reset_link': link,       # Keep as reset_link for template compatibility
+            'reset_password_link': link,       # Keep as reset_password_link for template compatibility
             'logo_cid': logo_cid,
         }
         
@@ -60,12 +59,16 @@ class EmailService:
     @staticmethod
     def send_activation_email(user):
         """Send activation email to user."""
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}/api/activate/{uid}/{token}/"
+        
         return EmailService.send_email(
             user=user,
             subject="Activate your Videoflix account",
             text_template='confirm_email.txt',
             html_template='confirm_email.html',
-            url_pattern="/api/activate/{uid}/{token}/"
+            link=link
         )
 
     @staticmethod
@@ -73,13 +76,18 @@ class EmailService:
         """Send password reset email if user exists."""
         try:
             user = User.objects.get(email=email)
-            return EmailService.send_email(
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            link = f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:5500')}/pages/auth/confirm_password.html?uid={uid}&token={token}"
+            
+            EmailService.send_email(
                 user=user,
                 subject="Reset your Videoflix password",
                 text_template='forgot_password.txt',
                 html_template='forgot_password.html',
-                url_pattern="/api/password_reset/{uid}/{token}/"
+                link=link
             )
+            return token
         except User.DoesNotExist:
             # Don't reveal if email exists for security reasons
             return None
@@ -115,3 +123,20 @@ class AuthService:
                 
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return {'success': False, 'error': 'Invalid activation link.'}
+    
+    @staticmethod
+    def reset_password(uidb64, token, new_password):
+        """Reset user password with token validation."""
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+            
+            if default_token_generator.check_token(user, token):
+                user.set_password(new_password)
+                user.save()
+                return {'success': True, 'detail': 'Your Password has been successfully reset.'}
+            else:
+                return {'success': False, 'error': 'Invalid password reset link.'}
+                
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return {'success': False, 'error': 'Invalid password reset link.'}
