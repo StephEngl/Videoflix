@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import redirect
 from django.conf import settings
-from .serializers import RegistrationSerializer, LoginSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer
 from ..services import EmailService, AuthService
 from ..authentication import CookieJWTAuthentication
 
@@ -173,6 +173,20 @@ class CookieTokenRefreshView(TokenRefreshView):
             secure=False,
             samesite='Lax',
         )
+
+
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            EmailService.send_password_reset_email(email)
+            return Response(
+                {'message': 'If an account with that email exists, a password reset link has been sent.'},
+                status=status.HTTP_200_OK
+            )
 
 
 class TestEmailView(APIView):
