@@ -73,11 +73,6 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    
-    def validate_email(self, value):
-        if not User.objects.filter(email=value, is_active=True).exists():
-            raise serializers.ValidationError("No active account found with this email.")
-        return value
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
