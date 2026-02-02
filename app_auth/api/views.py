@@ -184,9 +184,14 @@ class PasswordResetView(APIView):
             email = serializer.validated_data['email']
             EmailService.send_password_reset_email(email)
             return Response(
-                {'message': 'If an account with that email exists, a password reset link has been sent.'},
+                {'detail': 'An email has been sent to reset your password.'},
                 status=status.HTTP_200_OK
             )
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
 
 
 class TestEmailView(APIView):
