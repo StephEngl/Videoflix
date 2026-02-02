@@ -191,7 +191,19 @@ class PasswordResetView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
+class PasswordConfirmView(APIView):
+    permission_classes = [AllowAny]
 
+    def post(self, request, uidb64, token):
+        new_password = request.data.get('new_password')
+        if not new_password:
+            return Response({'error': 'New password is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        result = AuthService.reset_password(uidb64, token, new_password)
+        if result['success']:
+            return Response({'detail': 'Your Password has been successfully reset.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TestEmailView(APIView):
