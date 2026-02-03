@@ -52,12 +52,32 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(TokenObtainPairSerializer):
-    """JWT token serializer with custom error handling."""
+    """JWT token serializer with email login - converts email to username."""
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Delete username field as we use email for login
+        if 'username' in self.fields:
+            del self.fields['username']
+        self.fields['email'] = serializers.EmailField()
     
     def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        if email and password:
+            try:
+                user = User.objects.get(email=email)
+                # Username für super().validate() setzen
+                attrs['username'] = user.username
+                attrs.pop('email')  # Email entfernen, da super() nur username kennt
+            except User.DoesNotExist:
+                raise serializers.ValidationError("Incorrect username or password.")
+
         try:
             data = super().validate(attrs)
-            data['detail'] = 'Login successfully!'
+            data['detail'] = 'Login successful'
             data['user'] = self.get_user_data()
             return data
         except Exception:
