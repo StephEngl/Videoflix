@@ -62,7 +62,6 @@ class ActivateAccountView(APIView):
     description="Obtain JWT tokens and set them in HttpOnly cookies.",
     responses={
         200: {'detail': 'Login successfully!'},
-        401: OpenApiResponse(description="Unauthorized - Invalid credentials"),
     }
 )
 class LoginView(APIView):
@@ -75,7 +74,14 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
-
+@extend_schema(
+    tags=['Authentication'],
+    description="Logout user by clearing JWT tokens from HttpOnly cookies.",
+    responses={
+        200: {'detail': 'Logout successful! All Tokens will be deleted. Refresh token is now invalid.'},
+        400: OpenApiResponse(description="Bad Request - User is not logged in. No tokens found."),
+    }
+)
 class LogoutView(APIView):
     """POST /api/logout/"""
     """API view for user logout.
@@ -174,7 +180,14 @@ class CookieTokenRefreshView(TokenRefreshView):
             samesite='Lax',
         )
 
-
+@extend_schema(
+    tags=['Authentication'],
+    description="Request password reset email.",
+    responses={
+        200: {'detail': 'An email has been sent to reset your password.'},
+        400: OpenApiResponse(description="Bad Request - Invalid input data"),
+    }
+)
 class PasswordResetView(APIView):
     permission_classes = [AllowAny]
 
@@ -190,7 +203,14 @@ class PasswordResetView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-
+@extend_schema(
+    tags=['Authentication'],
+    description="Confirm password reset with new password.",
+    responses={
+        200: {'detail': 'Your Password has been successfully reset.'},
+        400: OpenApiResponse(description="Bad Request - Invalid token or input data"),
+    }
+)
 class PasswordConfirmView(APIView):
     permission_classes = [AllowAny]
 
@@ -204,44 +224,3 @@ class PasswordConfirmView(APIView):
             return Response({'detail': 'Your Password has been successfully reset.'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class TestEmailView(APIView):
-    """Test email sending functionality."""
-    permission_classes = [AllowAny]  # Remove in production!
-    
-    def post(self, request):
-        email = request.data.get('email')
-        if not email:
-            return Response(
-                {'error': 'Email address is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            # Create or get a test user for activation email
-            test_user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'username': f'testuser_{email.split("@")[0]}',
-                    'is_active': False
-                }
-            )
-            
-            # Send activation email using EmailService
-            token = EmailService.send_activation_email(test_user)
-            
-            return Response(
-                {
-                    'message': f'Activation email sent successfully to {email}',
-                    'user_created': created,
-                    'token': token  # Remove in production for security
-                },
-                status=status.HTTP_200_OK
-            )
-            
-        except Exception as e:
-            return Response(
-                {'error': f'Failed to send email: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
