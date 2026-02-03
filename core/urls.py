@@ -19,9 +19,19 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('django-rq/', include('django_rq.urls')),
     path('api/', include('app_auth.api.urls')),
-    path('api/', include('app_video.api.urls'))
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path('api/', include('app_video.api.urls')),
+
+    # API documentation (including Swagger UI)
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+] 
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
