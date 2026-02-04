@@ -1,6 +1,7 @@
 import os
 import subprocess
 from django.conf import settings
+from django.core.files import File
 from django_rq import job
 from app_video.models import Video
 
@@ -60,7 +61,9 @@ def process_video_task(video_id):
             thumbnail_path
         ], check=True)
         
-        video.thumbnail_url = f'/media/videos/hls/{video.id}/thumbnail.jpg'
+        with open(thumbnail_path, 'rb') as f:
+            video.thumbnail.save(f'thumbnail.jpg', File(f), save=False)
+
         video.processing_status = 'completed'
         video.is_processed = True
         video.save()
