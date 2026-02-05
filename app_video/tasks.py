@@ -51,7 +51,10 @@ def process_video_task(video_id):
             setattr(video, f'hls_{resolution}_path', f'videos/hls/{video.id}/{resolution}/index.m3u8')
         
         # Thumbnail generieren
-        thumbnail_path = os.path.join(output_dir, 'thumbnail.jpg')
+        thumbnail_dir = os.path.join(settings.MEDIA_ROOT, 'videos', 'thumbnails', str(video.id))
+        os.makedirs(thumbnail_dir, exist_ok=True)
+        thumbnail_path = os.path.join(thumbnail_dir, 'thumbnail.jpg')
+        
         subprocess.run([
             'ffmpeg',
             '-i', input_path,
@@ -62,7 +65,7 @@ def process_video_task(video_id):
         ], check=True)
         
         with open(thumbnail_path, 'rb') as f:
-            video.thumbnail.save(f'thumbnail.jpg', File(f), save=False)
+            video.thumbnail.save(f'{video.id}/thumbnail.jpg', File(f), save=False)
 
         video.processing_status = 'completed'
         video.is_processed = True
