@@ -132,3 +132,18 @@ def create_master_playlist(video_id):
         print(f"Master playlist creation failed for video {video_id}: {error}")
         raise error
 
+
+
+@job('cleanup')
+def cleanup_deleted_video_files(video_id, file_paths):
+    """Clean up files when video is deleted."""
+    try:
+        for file_path in file_paths:
+            if os.path.exists(file_path):
+                if os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+                else:
+                    os.remove(file_path)
+        print(f"Cleaned up files for deleted video {video_id}")
+    except Exception as error:
+        print(f"File cleanup failed for video {video_id}: {error}")
