@@ -40,14 +40,3 @@ class Video(models.Model):
     def __str__(self):
         """Return video title as string representation."""
         return self.title
-
-    def save(self, *args, **kwargs):
-        """
-        Save video and trigger async processing for new uploads.
-        Automatically starts HLS conversion for newly uploaded videos.
-        """
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        if is_new and self.original_video:
-            from app_video.tasks import process_video_task
-            process_video_task.delay(self.id)
