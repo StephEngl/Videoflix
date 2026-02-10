@@ -1,18 +1,21 @@
 import os
 import shutil
 import subprocess
+from django.db import transaction
 from django.conf import settings
 from django.core.files import File
 from django_rq import job
 from app_video.models import Video
 
-@job('video_processing')
+@job
+@transaction.atomic
 def convert_video_to_hls(video_id, resolution, scale, video_bitrate, audio_bitrate):
     """Background task for converting video to specific HLS resolution with FFmpeg."""
     try:
-        video = Video.objects.get(id=video_id)
-        video.processing_status = 'processing'
-        video.save()
+        video = Video.objects.select_for_update().get(id=video_id)
+        if video.processing_status == 'pending':
+            video.processing_status = 'processing'
+            video.save()
         
         # Pfade definieren
         input_path = video.original_video.path
@@ -44,17 +47,19 @@ def convert_video_to_hls(video_id, resolution, scale, video_bitrate, audio_bitra
         print(f"HLS conversion completed for {resolution}: Video {video_id}")   
         
     except Exception as error:
+        video = Video.objects.get(id=video_id)
         video.processing_status = 'failed'
         video.save()
         print(f"HLS conversion completed for {resolution}: Video {video_id}")
         raise error
 
 
-@job('thumbnails')
+@job
+@transaction.atomic
 def create_thumbnail(video_id):
     """Create thumbnail for video."""
     try:
-        video = Video.objects.get(id=video_id)
+        video = Video.objects.select_for_update().get(id=video_id)
         
         # Skip if thumbnail already exists
         if video.thumbnail:
@@ -89,11 +94,12 @@ def create_thumbnail(video_id):
         raise error
 
 
-@job('playlists')
+@job
+@transaction.atomic
 def create_master_playlist(video_id):
     """Create HLS master playlist."""
     try:
-        video = Video.objects.get(id=video_id)
+        video = Video.objects.select_for_update().get(id=video_id)
         
         output_dir = os.path.join(settings.MEDIA_ROOT, 'videos', 'hls', str(video.id))
         master_playlist_path = os.path.join(output_dir, 'master.m3u8')
@@ -134,7 +140,7 @@ def create_master_playlist(video_id):
 
 
 
-@job('cleanup')
+@job
 def cleanup_deleted_video_files(video_id, file_paths):
     """Clean up files when video is deleted."""
     try:
