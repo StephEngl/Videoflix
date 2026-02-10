@@ -20,11 +20,10 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from django_rq import urls as dajngo_rq_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/django-rq/', include(dajngo_rq_urls)),
+    path('django-rq/', include('django_rq.urls')),
     path('api/', include('app_auth.api.urls')),
     path('api/', include('app_video.api.urls')),
 
