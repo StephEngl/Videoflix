@@ -27,7 +27,13 @@ User = get_user_model()
     }
 )
 class RegistrationView(APIView):
+    """API view for user registration."""
     def post(self, request):
+        """Register a new user and send activation email.
+        
+        Args:
+            request: HTTP request containing user registration data.
+        """
         serializer = RegistrationSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -48,7 +54,18 @@ class RegistrationView(APIView):
     }
 ) 
 class ActivateAccountView(APIView):
+    """API view for user account activation."""
     def get(self, request, uidb64, token):
+        """Activate user account via email link.
+        
+        Args:
+            request: HTTP request.
+            uidb64: Base64 encoded user ID.
+            token: Activation token.
+            
+        Returns:
+            HttpResponseRedirect: Redirect to frontend with activation status.
+        """
         result = AuthService.activate_user(uidb64, token)
 
         if result['success']:
@@ -65,8 +82,16 @@ class ActivateAccountView(APIView):
     }
 )
 class LoginView(APIView):
-    """POST /api/login/"""
+    """API view for user authentication."""
     def post(self, request):
+        """Authenticate user and return JWT tokens.
+        
+        Args:
+            request: HTTP request containing login credentials.
+            
+        Returns:
+            Response: JWT tokens and user data or validation errors.
+        """
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             return Response(serializer.validated_data, status=status.HTTP_200_OK)
@@ -83,16 +108,16 @@ class LoginView(APIView):
     }
 )
 class LogoutView(APIView):
-    """POST /api/logout/"""
-    """API view for user logout.
-    
-    Clears JWT tokens from HttpOnly cookies to securely
-    log out the authenticated user.
-    """
+    """API view for user logout."""
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        """Logout user by clearing JWT tokens from cookies.
+            
+        Returns:
+            Response: Success message or error if no tokens found.
+        """
         refresh_token = request.COOKIES.get("refresh_token")
         access_token = request.COOKIES.get("access_token")
 
@@ -121,14 +146,18 @@ class LogoutView(APIView):
     }
 )
 class CookieTokenRefreshView(TokenRefreshView):
-    """API view for refreshing JWT access tokens.
-    
-    Uses refresh token from HttpOnly cookies to generate new
-    access token when the current one expires.
-    """
+    """API view for refreshing JWT access tokens using HttpOnly cookies."""
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
+        """Refresh access token using refresh token from cookies.
+        
+        Args:
+            request: HTTP request containing refresh token in cookies.
+            
+        Returns:
+            Response: New access token or error message.
+        """
         refresh_token = self._get_refresh_token_from_cookies(request)
         
         if refresh_token is None:
@@ -144,14 +173,25 @@ class CookieTokenRefreshView(TokenRefreshView):
         return response
 
     def _get_refresh_token_from_cookies(self, request):
-        """Extract refresh token from HttpOnly cookies."""
+        """Extract refresh token from HttpOnly cookies.
+
+        Returns:
+            str or None: Refresh token if found, None otherwise.
+        """
         refresh_token = request.COOKIES.get("refresh_token")
         if refresh_token is None:
             return None
         return refresh_token
 
     def _validate_refresh_token(self, refresh_token):
-        """Validate refresh token and return new access token."""
+        """Validate refresh token and return new access token.
+        
+        Args:
+            refresh_token: JWT refresh token.
+            
+        Returns:
+            str or None: New access token if valid, None otherwise.
+        """
         if refresh_token is None:
             return None
         
@@ -163,7 +203,14 @@ class CookieTokenRefreshView(TokenRefreshView):
             return None
 
     def _create_refresh_response(self, access_token):
-        """Create successful token refresh response."""
+        """Create successful token refresh response.
+        
+        Args:
+            access_token: New JWT access token.
+            
+        Returns:
+            Response: Response containing new access token.
+        """
         data = {
             "detail": "Token refreshed",
             "access": access_token
@@ -171,7 +218,12 @@ class CookieTokenRefreshView(TokenRefreshView):
         return Response(data, status=status.HTTP_200_OK)
 
     def _set_access_cookie(self, response, access_token):
-        """Set new access token as HttpOnly cookie."""
+        """Set new access token as HttpOnly cookie.
+        
+        Args:
+            response: HTTP response object.
+            access_token: JWT access token to set in cookie.
+        """
         response.set_cookie(
             key='access_token',
             value=access_token,
@@ -189,9 +241,18 @@ class CookieTokenRefreshView(TokenRefreshView):
     }
 )
 class PasswordResetView(APIView):
+    """API view for password reset request."""
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """Send password reset email.
+        
+        Args:
+            request: HTTP request containing user email.
+            
+        Returns:
+            Response: Success message or validation errors.
+        """
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
@@ -212,9 +273,17 @@ class PasswordResetView(APIView):
     }
 )
 class PasswordConfirmView(APIView):
+    """API view for password reset confirmation."""
     permission_classes = [AllowAny]
 
     def post(self, request, uidb64, token):
+        """Confirm password reset with new password.
+        
+        Args:
+            request: HTTP request containing new password.
+            uidb64: Base64 encoded user ID.
+            token: Password reset token.
+        """
         new_password = request.data.get('new_password')
         if not new_password:
             return Response({'error': 'New password is required.'}, status=status.HTTP_400_BAD_REQUEST)

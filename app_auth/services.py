@@ -11,37 +11,30 @@ import os
 User = get_user_model()
 
 class EmailService:
+    """Service for sending authentication-related emails."""
+    
     @staticmethod
     def send_email(user, subject, text_template, html_template, link):
-        """
-        Central function to send emails with token-based links.
+        """Send templated email with embedded logo.
         
         Args:
-            user: User object
-            subject: Email subject line
-            text_template: Plain text template name
-            html_template: HTML template name  
-            link: Complete URL link for the email
+            user: User object to send email to.
+            subject: Email subject line.
+            text_template: Path to plain text template.
+            html_template: Path to HTML template.
+            link: Complete URL link for the email.
         """
-        # Generate token and uid
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        # link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}{url_pattern.format(uid=uid, token=token)}"
-        
-        # Content ID for embedded logo
         logo_cid = "logo"
         context = {
             'username': user.username,
-            'activation_link': link,  # Keep as activation_link for template compatibility
-            'reset_password_link': link,       # Keep as reset_password_link for template compatibility
+            'activation_link': link,
+            'reset_password_link': link,
             'logo_cid': logo_cid,
         }
         
-        # Render templates
         text_content = render_to_string(text_template, context)
         html_content = render_to_string(html_template, context)
         
-        # Create email message
         email_message = EmailMultiAlternatives(
             subject=subject,
             body=text_content,
@@ -51,29 +44,41 @@ class EmailService:
         email_message.attach_alternative(html_content, "text/html")
         
         EmailService.attach_logo_to_email(email_message, logo_cid)
-        
         email_message.send(fail_silently=False)
-        
-        return token
 
     @staticmethod
     def send_activation_email(user):
-        """Send activation email to user."""
+        """Send account activation email.
+        
+        Args:
+            user: User object to send activation email to.
+            
+        Returns:
+            str: Generated activation token.
+        """
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}/api/activate/{uid}/{token}/"
         
-        return EmailService.send_email(
+        EmailService.send_email(
             user=user,
             subject="Activate your Videoflix account",
             text_template='confirm_email.txt',
             html_template='confirm_email.html',
             link=link
         )
+        return token
 
     @staticmethod
     def send_password_reset_email(email):
-        """Send password reset email if user exists."""
+        """Send password reset email if user exists.
+        
+        Args:
+            email: Email address to send password reset to.
+            
+        Returns:
+            str or None: Generated reset token if user exists, None otherwise.
+        """
         try:
             user = User.objects.get(email=email)
             token = default_token_generator.make_token(user)
@@ -94,7 +99,12 @@ class EmailService:
 
     @staticmethod
     def attach_logo_to_email(email_message, logo_cid):
-        """Attach logo image to email message."""
+        """Attach logo image to email message for embedding.
+        
+        Args:
+            email_message: EmailMultiAlternatives object.
+            logo_cid: Content ID for the logo image.
+        """
         logo_path = os.path.join(settings.BASE_DIR, 'app_auth', 'assets', 'logo_icon.svg')
         if os.path.exists(logo_path):
             with open(logo_path, 'rb') as f:
@@ -107,9 +117,19 @@ class EmailService:
     
 
 class AuthService:
+    """Service for user authentication operations."""
+    
     @staticmethod
     def activate_user(uidb64, token):
-        """Activate user account with token validation."""
+        """Activate user account with token validation.
+        
+        Args:
+            uidb64: Base64 encoded user ID.
+            token: Activation token.
+            
+        Returns:
+            dict: Success status and message or error.
+        """
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
@@ -126,7 +146,16 @@ class AuthService:
     
     @staticmethod
     def reset_password(uidb64, token, new_password):
-        """Reset user password with token validation."""
+        """Reset user password with token validation.
+        
+        Args:
+            uidb64: Base64 encoded user ID.
+            token: Password reset token.
+            new_password: New password to set.
+            
+        Returns:
+            dict: Success status and message or error.
+        """
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
