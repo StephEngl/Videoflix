@@ -1,3 +1,4 @@
+"""Django models for video management and HLS streaming."""
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -27,9 +28,11 @@ CATEGORY_CHOICES = [
 ]
 
 class Video(models.Model):
-    """
-    Video model for storing video metadata and HLS streaming paths.
-    Automatically processes uploaded videos for HLS streaming.
+    """Model for video storage and HLS streaming management.
+    
+    Stores video metadata, processing status, and HLS streaming paths
+    for multiple resolutions. Automatically triggers HLS conversion
+    upon video upload through Django signals.
     """
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=200)
