@@ -14,7 +14,7 @@ User = get_user_model()
 class VideoListView(APIView):
     """GET /api/video/"""
     def get(self, request):
-        videos = Video.objects.filter(is_processed=True)
+        videos = Video.objects.filter(is_processed=True).order_by('-created_at')
         serializer = VideoSerializer(videos, many=True)
         return Response(serializer.data)
     
