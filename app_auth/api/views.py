@@ -4,10 +4,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import redirect
 from django.conf import settings
-from .serializers import RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from ..services import EmailService, AuthService
 from ..authentication import CookieJWTAuthentication
 
@@ -21,8 +20,31 @@ User = get_user_model()
 @extend_schema(
     tags=['Authentication'],
     description="Register a new user and send activation email.",
+    request=RegistrationSerializer,
     responses={
-        201: {'detail': 'Registration successful. Please check your email to activate your account.'},
+        201: {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "integer",
+                            "example": 1
+                        },
+                        "email": {
+                            "type": "string",
+                            "format": "email",
+                            "example": "user@example.com"
+                        }
+                    }
+                },
+                "token": {
+                    "type": "string",
+                    "example": "activation_token"
+                }
+            }
+        },
         400: OpenApiResponse(description="Bad Request - Invalid input data"),
     }
 )
@@ -38,9 +60,11 @@ class RegistrationView(APIView):
 
         if serializer.is_valid():
             user = serializer.save()
-            EmailService.send_activation_email(user)
-            return Response({'user': {'id': user.id, 'email': user.email}, 'message': 
-                             'Registration successful. Please check your email to activate your account.'}, status=status.HTTP_201_CREATED)
+            token = EmailService.send_activation_email(user)
+            return Response({
+                'user': {'id': user.id, 'email': user.email}, 
+                'token': token
+            }, status=status.HTTP_201_CREATED)
         else:         
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -49,7 +73,15 @@ class RegistrationView(APIView):
     tags=['Authentication'],
     description="Activate user account via email link.",
     responses={
-        200: {'message': 'Account successfully activated.'},
+        200: {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Account successfully activated."
+                }
+            }
+        },
         400: OpenApiResponse(description="Bad Request - Invalid activation link"),
     }
 ) 
@@ -77,8 +109,31 @@ class ActivateAccountView(APIView):
 @extend_schema(
     tags=['Authentication'],
     description="Obtain JWT tokens and set them in HttpOnly cookies.",
+    request=LoginSerializer,
     responses={
-        200: {'detail': 'Login successfully!'},
+        200: {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Login successful"
+                },
+                "user": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "integer",
+                            "example": 1
+                        },
+                        "username": {
+                            "type": "string", 
+                            "example": "user@example.com"
+                        }
+                    }
+                }
+            }
+        },
+        400: OpenApiResponse(description="Bad Request - Invalid credentials"),
     }
 )
 class LoginView(APIView):
@@ -103,7 +158,15 @@ class LoginView(APIView):
     tags=['Authentication'],
     description="Logout user by clearing JWT tokens from HttpOnly cookies.",
     responses={
-        200: {'detail': 'Logout successful! All Tokens will be deleted. Refresh token is now invalid.'},
+        200: {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Logout successful! All tokens will be deleted. Refresh token is now invalid."
+                }
+            }
+        },
         400: OpenApiResponse(description="Bad Request - User is not logged in. No tokens found."),
     }
 )
@@ -138,11 +201,24 @@ class LogoutView(APIView):
 
 @extend_schema(
     tags=['Authentication'],
-    description="Refresh JWT access token using the refresh token stored in HttpOnly cookie.",
+    description="Gives a new access token when the old access token has expired. The token in the response has no use for the frontend since we work with HTTP-ONLY-COOKIES here. This is only for demonstration and information for you.",
+    request=None,
     responses={
-        200: {'detail': 'Token refreshed'},
+        200: {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Token refreshed"
+                },
+                "access": {
+                    "type": "string",
+                    "example": "new_access_token"
+                }
+            }
+        },
         400: OpenApiResponse(description="Bad Request - Refresh token not provided."),
-        401: OpenApiResponse(description="Unauthorized - Refresh token not provided or invalid"),
+        401: OpenApiResponse(description="Unauthorized - Invalid refresh token"),
     }
 )
 class CookieTokenRefreshView(TokenRefreshView):
@@ -232,11 +308,21 @@ class CookieTokenRefreshView(TokenRefreshView):
             samesite='Lax',
         )
 
+
 @extend_schema(
     tags=['Authentication'],
     description="Request password reset email.",
+    request=PasswordResetRequestSerializer,
     responses={
-        200: {'detail': 'An email has been sent to reset your password.'},
+        200: {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "An email has been sent to reset your password."
+                }
+            }
+        },
         400: OpenApiResponse(description="Bad Request - Invalid input data"),
     }
 )
@@ -263,12 +349,22 @@ class PasswordResetView(APIView):
             )
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+    
+
 @extend_schema(
     tags=['Authentication'],
     description="Confirm password reset with new password.",
+    request=PasswordResetConfirmSerializer,
     responses={
-        200: {'detail': 'Your Password has been successfully reset.'},
+        200: {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "string",
+                    "example": "Your Password has been successfully reset."
+                }
+            }
+        },
         400: OpenApiResponse(description="Bad Request - Invalid token or input data"),
     }
 )
