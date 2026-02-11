@@ -200,8 +200,8 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Quizly API',
-    'DESCRIPTION': 'Backend for a quiz application made from youtube videos using Gemini AI',
+    'TITLE': 'Videoflix API',
+    'DESCRIPTION': 'Backend for a video streaming platform with user authentication and video processing features.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
