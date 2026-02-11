@@ -35,23 +35,29 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
-        """Validate that email is unique.
+        """Validate email format (uniqueness handled in create method).
+        
+        Note: We don't reveal if email exists to prevent user enumeration attacks.
         """
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email is already in use.")
         return value
 
     def create(self, validated_data):
         """Create a new inactive user with auto-generated username.
+        
+        If email already exists, we silently 'succeed' to prevent enumeration.
+        The existing user will receive an email indicating someone tried to register.
           
         Returns:
-            User: The created user instance.
+            User: The created or existing user instance.
         """
         validated_data.pop('confirmed_password')
-        
         email = validated_data['email']
-        base_username = email.split('@')[0]
         
+        existing_user = User.objects.filter(email=email).first()
+        if existing_user:
+            return existing_user
+        
+        base_username = email.split('@')[0]
         username = base_username
         counter = 1
         while User.objects.filter(username=username).exists():
