@@ -48,7 +48,7 @@ class EmailService:
 
     @staticmethod
     def send_activation_email(user):
-        """Send account activation email.
+        """Send account activation email only for new inactive users.
         
         Args:
             user: User object to send activation email to.
@@ -56,18 +56,20 @@ class EmailService:
         Returns:
             str: Generated activation token.
         """
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}/api/activate/{uid}/{token}/"
-        
-        EmailService.send_email(
-            user=user,
-            subject="Activate your Videoflix account",
-            text_template='confirm_email.txt',
-            html_template='confirm_email.html',
-            link=link
-        )
-        return token
+        if not user.is_active:
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}/api/activate/{uid}/{token}/"
+            
+            EmailService.send_email(
+                user=user,
+                subject="Activate your Videoflix account",
+                text_template='confirm_email.txt',
+                html_template='confirm_email.html',
+                link=link
+            )
+            return token
+        return None
 
     @staticmethod
     def send_password_reset_email(email):
