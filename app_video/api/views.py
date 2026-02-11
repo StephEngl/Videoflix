@@ -41,7 +41,7 @@ class VideoListView(APIView):
             401: OpenApiResponse(description="Unauthorized - Authentication credentials were not provided or are invalid."),
             404: OpenApiResponse(description="Not Found - Video or playlist not found."),
         }
-    )
+)
 class HLSPlaylistView(APIView):
     """API view for serving HLS playlist files."""
     
