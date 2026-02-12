@@ -16,8 +16,23 @@ class RegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'password', 'confirmed_password']
         extra_kwargs = {
-            'password': {'write_only': True},
-            'email': {'required': True},
+            'password': {
+                'write_only': True,
+                'min_length': 8,
+                'error_messages': {
+                    'min_length': 'Password must be at least 8 characters long.',
+                    'required': 'Password is required.',
+                    'blank': 'Password cannot be blank.'
+                    }
+                },
+            'email': {
+                'required': True,
+                'allow_blank': False,
+                'error_messages': {
+                    'invalid': 'Enter a valid email address.',
+                    'required': 'Email address is required.'
+                    }
+                },
         }
 
     def validate_confirmed_password(self, value):
@@ -35,11 +50,17 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
-        """Validate email format (uniqueness handled in create method).
-        
-        Note: We don't reveal if email exists to prevent user enumeration attacks.
+        """Validate and normalize email format.
+    
+        Note: Email uniqueness is NOT checked here to prevent enumeration attacks.
+        Duplicate handling occurs silently in the create() method.
         """
-        return value
+        if not value:
+            raise serializers.ValidationError("Email is required.")
+    
+        normalized_email = value.lower()
+
+        return normalized_email
 
     def create(self, validated_data):
         """Create a new inactive user with auto-generated username.
