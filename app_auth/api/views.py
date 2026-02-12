@@ -1,7 +1,7 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import redirect
@@ -50,6 +50,8 @@ User = get_user_model()
 )
 class RegistrationView(APIView):
     """API view for user registration."""
+    permission_classes = [AllowAny]
+
     def post(self, request):
         """Register a new user and send activation email.
         
@@ -87,6 +89,8 @@ class RegistrationView(APIView):
 ) 
 class ActivateAccountView(APIView):
     """API view for user account activation."""
+    permission_classes = [AllowAny]
+    
     def get(self, request, uidb64, token):
         """Activate user account via email link.
         
@@ -136,22 +140,43 @@ class ActivateAccountView(APIView):
         400: OpenApiResponse(description="Bad Request - Invalid credentials"),
     }
 )
-class LoginView(APIView):
-    """API view for user authentication."""
-    def post(self, request):
-        """Authenticate user and return JWT tokens.
-        
-        Args:
-            request: HTTP request containing login credentials.
-            
-        Returns:
-            Response: JWT tokens and user data or validation errors.
-        """
-        serializer = LoginSerializer(data=request.data)
+class LoginView(TokenObtainPairView):
+    """API view for user authentication with cookie-based tokens.
+    
+    Validates user credentials and sets JWT tokens in secure
+    HttpOnly cookies for enhanced security.
+    """
+    serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        """Authenticate user and set JWT tokens in cookies."""
+        serializer = self.get_serializer(data=request.data)
+
         if serializer.is_valid():
-            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+            validated_data = serializer.validated_data
+            response = Response(validated_data, status=status.HTTP_200_OK)
+
+            refresh_token = validated_data.pop('refresh', None)
+            access_token = validated_data.pop('access', None)
+
+            if refresh_token and access_token:
+                self._set_auth_cookies(response, refresh_token, access_token)
+                
+            return response
+        else:
+            return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+
+    def _set_auth_cookies(self, response, refresh_token, access_token):
+        """Set JWT tokens as HttpOnly cookies on response."""
+        cookie_options = {
+            'httponly': True,
+            'secure': False,  # Set to True in production with HTTPS
+            'samesite': 'Lax',
+        }
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        response.set_cookie(key='refresh_token', value=str(refresh_token), **cookie_options)
+        response.set_cookie(key='access_token', value=str(access_token), **cookie_options)
     
 
 @extend_schema(
