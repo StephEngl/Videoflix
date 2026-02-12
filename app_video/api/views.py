@@ -2,10 +2,14 @@ import os
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import FileResponse
+
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from app_auth.authentication import CookieJWTAuthentication
 from ..models import Video
 from .serializers import VideoSerializer
 
@@ -21,6 +25,8 @@ User = get_user_model()
 )
 class VideoListView(APIView):
     """API view for retrieving processed videos."""
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request):
         """Get list of all processed videos ordered by creation date.
@@ -44,6 +50,8 @@ class VideoListView(APIView):
 )
 class HLSPlaylistView(APIView):
     """API view for serving HLS playlist files."""
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, movie_id, resolution):
         """Serve HLS playlist file for specific video and resolution.
@@ -92,6 +100,8 @@ class HLSPlaylistView(APIView):
 )
 class HLSSegmentView(APIView):
     """API view for serving HLS video segments."""
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, movie_id, resolution, segment):
         """Serve HLS video segment file.
