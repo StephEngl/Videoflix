@@ -190,9 +190,6 @@ docker-compose exec web coverage report
 The project includes custom management commands for maintenance:
 
 ```bash
-# Clean up inactive users (implement as needed)
-docker-compose exec web python manage.py cleanup_inactive_users
-
 # Send test emails
 docker-compose exec web python manage.py send_test_email
 ```
