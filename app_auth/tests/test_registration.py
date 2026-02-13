@@ -37,6 +37,11 @@ class TestRegistrationView:
         assert 'token' in response.data
         assert response.data['user']['email'] == "newuser@example.com"
         assert 'id' in response.data['user']
+
+        assert isinstance(response.data['token'], str)
+        assert isinstance(response.data['user'], dict)
+        assert isinstance(response.data['user']['id'], int)
+        assert isinstance(response.data['user']['email'], str)
         
         # Check user was created but is inactive
         user = User.objects.get(email="newuser@example.com")
