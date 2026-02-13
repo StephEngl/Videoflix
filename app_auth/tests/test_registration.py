@@ -6,14 +6,20 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
-from rest_framework.test import APIClient
 
 User = get_user_model()
 
 
+def generate_activation_data(user):
+    """Helper function to generate UID and token for user activation."""
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    return uidb64, token
+
+
 @pytest.mark.django_db
 class TestRegistrationView:
-    """Test registration endpoint with activation email."""
+    """Test user registration endpoint."""
     
     def test_successful_registration(self, api_client):
         """Test successful user registration with activation email."""
@@ -123,116 +129,109 @@ class TestRegistrationView:
 class TestActivateAccountView:
     """Test account activation endpoint."""
     
-    def test_successful_activation(self, api_client):
+    def test_successful_activation(self, api_client, inactive_user):
         """Test successful account activation."""
-        # Create inactive user
-        user = User.objects.create_user(
-            email="test@example.com",
-            password="SecurePass123!",
-            is_active=False
-        )
+        user = inactive_user
+        assert not user.is_active
         
-        # Generate activation token and uid
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
+        uidb64, token = generate_activation_data(user)
         
-        url = reverse('activate-account', kwargs={
+        url = reverse('activate', kwargs={
             'uidb64': uidb64,
             'token': token
         })
         
         response = api_client.get(url)
         
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['message'] == "Account successfully activated."
+        assert response.status_code == status.HTTP_302_FOUND
+        assert "activation=success" in response.url or "success" in response.url
         
-        # Check user is now active
         user.refresh_from_db()
         assert user.is_active
 
-    def test_activation_invalid_token(self, api_client):
+    def test_activation_invalid_token(self, api_client, inactive_user):
         """Test activation fails with invalid token."""
-        user = User.objects.create_user(
-            email="test@example.com",
-            password="SecurePass123!",
-            is_active=False
-        )
+        user = inactive_user
         
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        uidb64, _ = generate_activation_data(user)  # Valid UID, invalid token
         invalid_token = "invalid-token-123"
         
-        url = reverse('activate-account', kwargs={
+        url = reverse('activate', kwargs={
             'uidb64': uidb64,
             'token': invalid_token
         })
         
         response = api_client.get(url)
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        
-        # User should still be inactive
+        assert response.status_code == status.HTTP_302_FOUND
         user.refresh_from_db()
         assert not user.is_active
 
-    def test_activation_invalid_uid(self, api_client):
+    def test_activation_invalid_uid(self, api_client, inactive_user):
         """Test activation fails with invalid uidb64."""
-        user = User.objects.create_user(
-            email="test@example.com",
-            password="SecurePass123!",
-            is_active=False
-        )
+        user = inactive_user
         
         invalid_uidb64 = "invalid-uid"
         token = default_token_generator.make_token(user)
         
-        url = reverse('activate-account', kwargs={
+        url = reverse('activate', kwargs={
             'uidb64': invalid_uidb64,
             'token': token
         })
         
         response = api_client.get(url)
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-    def test_activation_nonexistent_user(self, api_client):
-        """Test activation fails for non-existent user."""
-        # Create valid looking uid for non-existent user
-        fake_uid = urlsafe_base64_encode(force_bytes(99999))
-        fake_token = "some-token"
-        
-        url = reverse('activate-account', kwargs={
-            'uidb64': fake_uid,
-            'token': fake_token
-        })
-        
-        response = api_client.get(url)
-        
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_302_FOUND
+        user.refresh_from_db()
+        assert not user.is_active
 
     def test_activation_already_active_user(self, api_client, user):
         """Test activation of already active user."""
-        # user fixture is already active
         assert user.is_active
         
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         
-        url = reverse('activate-account', kwargs={
+        url = reverse('activate', kwargs={
             'uidb64': uidb64,
             'token': token
         })
         
         response = api_client.get(url)
         
-        # Should still work but user remains active
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_302_FOUND
         user.refresh_from_db()
         assert user.is_active
+
+    def test_activation_nonexistent_user(self, api_client):
+        """Test activation fails for non-existent user."""
+        non_existent_id = 99999
+        assert not User.objects.filter(id=non_existent_id).exists()
+
+        fake_uid = urlsafe_base64_encode(force_bytes(non_existent_id))
+        fake_token = "some-token"
+        
+        url = reverse('activate', kwargs={
+            'uidb64': fake_uid,
+            'token': fake_token
+        })
+
+        user_count_before = User.objects.count()
+        
+        response = api_client.get(url)
+        
+        assert response.status_code == status.HTTP_302_FOUND
+        assert "activation=failed" in response.url or "error" in response.url
+
+        user_count_after = User.objects.count()
+        assert user_count_before == user_count_after
+
+        assert not User.objects.filter(id=non_existent_id).exists()
 
 
 @pytest.mark.django_db
 class TestRegistrationIntegration:
-    """Integration tests for the complete registration flow."""
+    """Integration tests for complete registration + activation flow."""
     
     def test_complete_registration_flow(self, api_client):
         """Test complete flow: register -> receive email -> activate."""
@@ -258,14 +257,14 @@ class TestRegistrationIntegration:
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         
-        activate_url = reverse('activate-account', kwargs={
+        activate_url = reverse('activate', kwargs={
             'uidb64': uidb64,
             'token': token
         })
         
         activate_response = api_client.get(activate_url)
-        assert activate_response.status_code == status.HTTP_200_OK
-        assert activate_response.data['message'] == "Account successfully activated."
+        assert activate_response.status_code == status.HTTP_302_FOUND
+        assert "activation=success" in activate_response.url or "success" in activate_response.url
         
         # Step 4: Verify user is now active
         user.refresh_from_db()
