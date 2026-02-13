@@ -34,6 +34,17 @@ def inactive_user():
 
 
 @pytest.fixture
+def login_user():
+    """User specifically for login tests with known credentials."""
+    return User.objects.create_user(
+        username='loginuser',
+        email='login@example.com',
+        password='LoginPass123!',
+        is_active=True
+    )
+
+
+@pytest.fixture
 def authenticated_api_client(api_client, user):
     """API Client with authenticated active user."""
     api_client.force_authenticate(user=user)
