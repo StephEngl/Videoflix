@@ -2,19 +2,10 @@ import pytest
 from django.core import mail
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
+from conftest import make_activation_url
 
 User = get_user_model()
-
-
-def generate_activation_data(user):
-    """Helper function to generate UID and token for user activation."""
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-    token = default_token_generator.make_token(user)
-    return uidb64, token
 
 
 @pytest.mark.django_db
@@ -136,72 +127,38 @@ class TestActivateAccountView:
     
     def test_successful_activation(self, api_client, inactive_user):
         """Test successful account activation."""
-        user = inactive_user
-        assert not user.is_active
-        
-        uidb64, token = generate_activation_data(user)
-        
-        url = reverse('activate', kwargs={
-            'uidb64': uidb64,
-            'token': token
-        })
-        
+        url = make_activation_url(inactive_user, valid_token=True)
         response = api_client.get(url)
         
         assert response.status_code == status.HTTP_302_FOUND
         assert "activation=success" in response.url or "success" in response.url
         
-        user.refresh_from_db()
-        assert user.is_active
+        inactive_user.refresh_from_db()
+        assert inactive_user.is_active
 
     def test_activation_invalid_token(self, api_client, inactive_user):
         """Test activation fails with invalid token."""
-        user = inactive_user
-        
-        uidb64, _ = generate_activation_data(user)  # Valid UID, invalid token
-        invalid_token = "invalid-token-123"
-        
-        url = reverse('activate', kwargs={
-            'uidb64': uidb64,
-            'token': invalid_token
-        })
-        
+        url = make_activation_url(inactive_user, valid_token=False)
         response = api_client.get(url)
         
         assert response.status_code == status.HTTP_302_FOUND
-        user.refresh_from_db()
-        assert not user.is_active
+        inactive_user.refresh_from_db()
+        assert not inactive_user.is_active
 
     def test_activation_invalid_uid(self, api_client, inactive_user):
         """Test activation fails with invalid uidb64."""
-        user = inactive_user
-        
-        invalid_uidb64 = "invalid-uid"
-        token = default_token_generator.make_token(user)
-        
-        url = reverse('activate', kwargs={
-            'uidb64': invalid_uidb64,
-            'token': token
-        })
-        
+        url = make_activation_url(inactive_user, valid_token=False)
         response = api_client.get(url)
         
         assert response.status_code == status.HTTP_302_FOUND
-        user.refresh_from_db()
-        assert not user.is_active
+        inactive_user.refresh_from_db()
+        assert not inactive_user.is_active
 
     def test_activation_already_active_user(self, api_client, user):
         """Test activation of already active user."""
         assert user.is_active
         
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-        
-        url = reverse('activate', kwargs={
-            'uidb64': uidb64,
-            'token': token
-        })
-        
+        url = make_activation_url(user, valid_token=True)
         response = api_client.get(url)
         
         assert response.status_code == status.HTTP_302_FOUND
@@ -212,14 +169,9 @@ class TestActivateAccountView:
         """Test activation fails for non-existent user."""
         non_existent_id = 99999
         assert not User.objects.filter(id=non_existent_id).exists()
+        fake_user = User(id=99999)
 
-        fake_uid = urlsafe_base64_encode(force_bytes(non_existent_id))
-        fake_token = "some-token"
-        
-        url = reverse('activate', kwargs={
-            'uidb64': fake_uid,
-            'token': fake_token
-        })
+        url = make_activation_url(fake_user, valid_token=False)
 
         user_count_before = User.objects.count()
         
@@ -256,16 +208,9 @@ class TestRegistrationIntegration:
         
         # Step 2: Extract activation link from email
         assert len(mail.outbox) == 1
-        email_body = mail.outbox[0].body
         
         # Step 3: Activate account (simulate clicking email link)
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-        
-        activate_url = reverse('activate', kwargs={
-            'uidb64': uidb64,
-            'token': token
-        })
+        activate_url = make_activation_url(user, valid_token=True)
         
         activate_response = api_client.get(activate_url)
         assert activate_response.status_code == status.HTTP_302_FOUND
