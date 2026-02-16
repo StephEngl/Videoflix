@@ -117,3 +117,21 @@ class TestLogoutView:
         assert "Authentication credentials were not provided" in str(response.data['detail'])
 
 
+@pytest.mark.django_db
+class TestTokenRefreshView:
+    """Test JWT token refresh endpoint."""
+
+    def test_token_refresh(self, logged_in_api_client):
+        """Test successful token refresh."""
+        refresh_token = logged_in_api_client.cookies.get('refresh_token')
+        assert refresh_token is not None
+
+        url = reverse('token_refresh')
+        response = logged_in_api_client.post(url, {"refresh": refresh_token.value}, format='json')
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert 'detail' in response.data
+        assert response.data['detail'] == "Token refreshed"
+        assert isinstance(response.data['detail'], str)
+        assert 'access' in response.data
+        assert isinstance(response.data['access'], str)
