@@ -64,7 +64,6 @@ class TestLoginView:
         error_message = get_error_message(response.data)
         assert "Incorrect username or password" in error_message
 
-
     def test_login_inactive_user(self, api_client, inactive_user):
         """Test login fails for inactive user."""
         response = make_login_request(api_client, inactive_user.email, "testpass123")
@@ -93,3 +92,28 @@ def test_login_invalid_email_format(self, api_client):
     
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert "email" in response.data or "valid email" in str(response.data)
+
+
+@pytest.mark.django_db
+class TestLogoutView:
+    """Test user logout endpoint."""
+
+    def test_logout(self, logged_in_api_client):
+        """Test successful logout."""
+        response = logged_in_api_client.post(reverse('logout'))
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert 'detail' in response.data
+        assert response.data['detail'] == "Logout successful! All tokens will be deleted. Refresh token is now invalid."
+    
+        assert isinstance(response.data['detail'], str)
+    
+    def test_logout_without_authentication(self, api_client):
+        """Test logout fails without authentication."""
+        response = api_client.post(reverse('logout'))
+        
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert 'detail' in response.data
+        assert "Authentication credentials were not provided" in str(response.data['detail'])
+
+
