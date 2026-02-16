@@ -1,6 +1,7 @@
 import pytest
-from rest_framework.test import APIClient
+from django.urls import reverse
 from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
 from app_video.models import Video
 
 User = get_user_model()
@@ -42,6 +43,20 @@ def login_user():
         password='LoginPass123!',
         is_active=True
     )
+
+
+@pytest.fixture
+def logged_in_api_client(api_client, login_user):
+    """API Client with user logged in via cookies."""
+    api_client.post(
+        reverse('login'),
+        {
+            "email": login_user.email,
+            "password": "LoginPass123!"
+        }, 
+        format='json'
+    )
+    return api_client
 
 
 @pytest.fixture
