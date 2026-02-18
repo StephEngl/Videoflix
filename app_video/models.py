@@ -1,9 +1,19 @@
 """Django models for video management and HLS streaming."""
+import os
+from django.conf import settings
 from django.db import models
-from django.contrib.auth import get_user_model
 
 
-User = get_user_model()
+def video_directory_path(instance, filename):
+    """
+    Dynamic upload path: videos/{video_id}/{filename}.
+    
+    For new instances (no ID yet): videos/temp/{filename}
+    """
+    if instance.id is None:
+        return f'videos/temp/{filename}'
+    return f'videos/{instance.id}/{filename}'
+
 
 CATEGORY_CHOICES = [
     ("", "--- Please select category ---"),
@@ -37,10 +47,11 @@ class Video(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=200)
     description = models.TextField()
-    thumbnail = models.FileField(upload_to='videos/thumbnails/', blank=True, null=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, blank=True, null=False, default="")
 
-    original_video = models.FileField(upload_to='videos/original/')
+    original_video = models.FileField(upload_to=video_directory_path)
+    thumbnail = models.FileField(upload_to=video_directory_path, blank=True, null=True)
+
     is_processed = models.BooleanField(default=False)
     processing_status = models.CharField(
         max_length=20,
@@ -63,4 +74,44 @@ class Video(models.Model):
 
     def __str__(self):
         """Return video title as string representation."""
-        return self.title
+        return f"{self.title} ({self.id})"
+    
+    # === MEDIA DIRECTORY PROPERTIES ===
+    @property
+    def media_directory(self):
+        """Root directory: <MEDIA_ROOT>/videos/{id}/ — always returns str or raises."""
+        media_root = getattr(settings, "MEDIA_ROOT", None)
+        if not media_root:
+            raise RuntimeError("settings.MEDIA_ROOT is not configured")
+        return os.path.join(str(media_root), "videos", str(self.id))
+    
+    @property
+    def hls_directory(self):
+        """HLS root: <MEDIA_ROOT>/videos/{id}/hls/"""
+        return os.path.join(self.media_directory, "hls")
+    
+    @property
+    def thumbnail_path(self):
+        """Thumbnail full path: <MEDIA_ROOT>/videos/{id}/thumbnail.jpg"""
+        return os.path.join(self.media_directory, 'thumbnail.jpg')
+    
+    # === HLS HELPER METHODS ===
+    def get_hls_path(self, resolution):
+        """Relative path for given resolution (e.g. 'videos/123/hls/720p/index.m3u8')."""
+        attr = f'hls_{resolution}_path'
+        return getattr(self, attr, None)
+    
+    def hls_full_path(self, resolution):
+        """Full filesystem path for playlist."""
+        rel_path = self.get_hls_path(resolution)
+        return os.path.join(settings.MEDIA_ROOT, rel_path) if rel_path else None
+    
+    def hls_segment_dir(self, resolution):
+        """Directory for segments: media/videos/{id}/hls/{resolution}/"""
+        full_path = self.hls_full_path(resolution)
+        return os.path.dirname(full_path) if full_path else None
+    
+    def create_media_structure(self):
+        """Create all directories for this video."""
+        os.makedirs(self.media_directory, exist_ok=True)
+        os.makedirs(self.hls_directory, exist_ok=True)
