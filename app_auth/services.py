@@ -73,23 +73,29 @@ class EmailService:
 
     @staticmethod
     def send_password_reset_email(email):
-        """Send password reset email if user exists.
-        
+        """Send password reset email if user exists with case-insensitive lookup.
+    
         Args:
             email: Email address to send password reset to.
+            include_activation: Whether to mention account activation in message.
             
         Returns:
-            str or None: Generated reset token if user exists, None otherwise.
+            dict: Contains success status, message, and whether user was found.
         """
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email.strip())
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             link = f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:5500')}/pages/auth/confirm_password.html?uid={uid}&token={token}"
             
+            if not user.is_active:
+                subject = "Activate and reset your Videoflix password"
+            else:
+                subject="Reset your Videoflix password"
+            
             EmailService.send_email(
                 user=user,
-                subject="Reset your Videoflix password",
+                subject=subject,
                 text_template='forgot_password.txt',
                 html_template='forgot_password.html',
                 link=link
@@ -148,7 +154,7 @@ class AuthService:
     
     @staticmethod
     def reset_password(uidb64, token, new_password):
-        """Reset user password with token validation.
+        """Reset user password with token validation and auto-activation.
         
         Args:
             uidb64: Base64 encoded user ID.
@@ -164,7 +170,12 @@ class AuthService:
             
             if default_token_generator.check_token(user, token):
                 user.set_password(new_password)
+
+                if not user.is_active:
+                    user.is_active = True
+
                 user.save()
+                
                 return {'success': True, 'detail': 'Your Password has been successfully reset.'}
             else:
                 return {'success': False, 'error': 'Invalid password reset link.'}
