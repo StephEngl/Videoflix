@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: backend.Dockerfile
       target: development
+    ports:
+      - "8000:8000"
+      - '5678:5678'
     volumes:
       - ./:/app:cached
       - videoflix_media:/app/media
