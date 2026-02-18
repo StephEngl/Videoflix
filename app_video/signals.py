@@ -3,7 +3,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django_rq import get_queue
 from .models import Video
-from .tasks import convert_video_to_hls, create_thumbnail, create_master_playlist, cleanup_deleted_video_files
+from .tasks import convert_video_to_hls, create_thumbnail, create_master_playlist, cleanup_deleted_video_files, move_original_video_to_final_folder
 
 import django_rq
 
@@ -32,6 +32,8 @@ def video_post_save_handler(sender, instance, created, **kwargs):
             previous_job = None
             if not instance.thumbnail:
                 default_queue.enqueue(create_thumbnail, instance.id)
+
+            default_queue.enqueue(move_original_video_to_final_folder, instance.id)
             
             for format_data in VIDEO_RESOLUTIONS:
                 job = default_queue.enqueue(
