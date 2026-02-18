@@ -164,3 +164,30 @@ def cleanup_deleted_video_files(video_id):
     for path in paths_to_try:
         if path and os.path.exists(path):
             shutil.rmtree(path)
+
+
+# === Helper: Move original video from temp to final folder ===
+@job
+@transaction.atomic
+def move_original_video_to_final_folder(video_id):
+    """
+    Move the original video file from the temp folder to the final videos/{id}/ folder using video.media_directory.
+    Updates the FileField path and deletes the temp file.
+    Args:
+        video (Video): Video instance (must have an id!)
+    """
+    video = Video.objects.select_for_update().get(id=video_id)
+    if not video.id:
+        raise ValueError("Video instance must have an id before moving the file.")
+    
+    temp_path = video.original_video.path
+    filename = os.path.basename(temp_path)
+
+    final_dir = video.media_directory
+    os.makedirs(final_dir, exist_ok=True)
+
+    final_path = os.path.join(final_dir, filename)
+    shutil.move(temp_path, final_path)
+
+    video.original_video.name = f"videos/{video.id}/{filename}"
+    video.save(update_fields=["original_video"])
