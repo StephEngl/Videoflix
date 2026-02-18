@@ -62,18 +62,10 @@ class HLSPlaylistView(APIView):
         try:
             video = Video.objects.get(id=movie_id, is_processed=True)
             
-            playlist_path = getattr(video, f'hls_{resolution}_path', None)
-            if not playlist_path:
+            full_path = video.hls_full_path(resolution)
+            if not full_path or not os.path.exists(full_path):
                 return Response(
-                    {"error": f"Resolution {resolution} not available"}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            full_path = os.path.join(settings.MEDIA_ROOT, playlist_path)
-            
-            if not os.path.exists(full_path):
-                return Response(
-                    {"error": "Playlist not found"}, 
+                    {"error": f"HLS playlist {resolution} not found"}, 
                     status=status.HTTP_404_NOT_FOUND
                 )
             
@@ -107,8 +99,9 @@ class HLSSegmentView(APIView):
         """Serve HLS video segment file.
         
         Args:
-            resolution: Video resolution (e.g., '720p', '1080p').
-            segment: Segment filename (e.g., 'segment001.ts').
+            movie_id: Video primary key
+            resolution: '480p', '720p', or '1080p'
+            segment: filename like 'segment001.ts'
             
         Returns:
             FileResponse: TS segment file or error response.
@@ -116,16 +109,15 @@ class HLSSegmentView(APIView):
         try:
             video = Video.objects.get(id=movie_id, is_processed=True)
 
-            resolution_path = getattr(video, f'hls_{resolution}_path', None)
-            if not resolution_path:
+            segment_dir = video.hls_segment_dir(resolution)
+            
+            if not segment_dir:
                 return Response(
                     {"error": f"Resolution {resolution} not available"}, 
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            segment_dir = os.path.dirname(os.path.join(settings.MEDIA_ROOT, resolution_path))
             segment_path = os.path.join(segment_dir, segment)
-            
             if not os.path.exists(segment_path):
                 return Response(
                     {"error": f"Segment {segment} not found"}, 
