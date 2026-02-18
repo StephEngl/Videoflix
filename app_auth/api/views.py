@@ -351,7 +351,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         400: OpenApiResponse(description="Bad Request - Invalid input data"),
     }
 )
-class PasswordResetView(APIView):
+class PasswordResetRequestView(APIView):
     """API view for password reset request."""
     permission_classes = [AllowAny]
 
@@ -368,10 +368,8 @@ class PasswordResetView(APIView):
         if serializer.is_valid():
             email = serializer.validated_data['email']
             EmailService.send_password_reset_email(email)
-            return Response(
-                {'detail': 'An email has been sent to reset your password.'},
-                status=status.HTTP_200_OK
-            )
+            message = 'An email has been sent to reset your password.'
+            return Response({'detail': message}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

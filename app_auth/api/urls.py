@@ -11,7 +11,7 @@ from .views import (
     LoginView, 
     LogoutView, 
     CookieTokenRefreshView, 
-    PasswordResetView, 
+    PasswordResetRequestView, 
     PasswordConfirmView,
 )
 
@@ -26,6 +26,6 @@ urlpatterns = [
     path('token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
     
     # Password reset
-    path('password_reset/', PasswordResetView.as_view(), name='password_reset'),
+    path('password_reset/', PasswordResetRequestView.as_view(), name='password_reset'),
     path('password_confirm/<str:uidb64>/<str:token>/', PasswordConfirmView.as_view(), name='password_confirm'),
 ]
