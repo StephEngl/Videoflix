@@ -1,9 +1,10 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.core import mail
 from django.urls import reverse
-from django.contrib.auth import get_user_model
 from rest_framework import status
-from conftest import make_activation_url
+from test_helpers import make_activation_url
+
 
 User = get_user_model()
 
