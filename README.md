@@ -1,6 +1,4 @@
-<p align="center" >
-  <img src="app_auth/assets/logo_icon.svg" alt="Videoflix Logo" height="56">
-</p>
+  <img src="app_auth/assets/logo_icon.svg" alt="Videoflix Logo">
 <div style="height:16px"></div>
 
 # Videoflix Django Project
