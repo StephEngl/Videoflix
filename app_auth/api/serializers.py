@@ -146,6 +146,15 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     """Serializer for password reset request."""
     email = serializers.EmailField()
 
+    def validate_email(self, value):
+        """Validate and normalize email format."""
+        normalized_email = (value or "").strip().lower()
+        
+        if not normalized_email:
+            raise serializers.ValidationError("Email is required.")
+            
+        return normalized_email
+
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
     """Serializer for password reset confirmation."""
