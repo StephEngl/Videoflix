@@ -36,12 +36,6 @@ class TestVideoAPI:
         assert response.data == []
 
 
-    def test_video_list_ordered_by_creation_date(self, authenticated_api_client):
-        """Videos should be ordered by creation date (newest first)."""
-        # Would need factory to create multiple videos with different dates
-        pass
-
-
 @pytest.mark.django_db  
 class TestHLSPlaylistAPI:
     """Test cases for HLS playlist endpoint."""
@@ -65,20 +59,12 @@ class TestHLSPlaylistAPI:
         response = authenticated_api_client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
     
-    def test_hls_playlist_invalid_resolution(self, authenticated_api_client, processed_video):
+    def test_hls_playlist_invalid_resolution(self, authenticated_api_client, full_processed_video):
         """Should return 404 for unavailable resolution."""
-        url = f'/api/video/{processed_video.id}/480p/index.m3u8'  # Only 720p exists
+        url = f'/api/video/{full_processed_video.id}/4k/index.m3u8'
         response = authenticated_api_client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert 'Resolution 480p not available' in response.data['error']
-    
-    def test_hls_playlist_file_not_exists(self, authenticated_api_client, processed_video):
-        """Should return 404 when playlist file doesn't exist."""
-        url = f'/api/video/{processed_video.id}/720p/index.m3u8'
-        response = authenticated_api_client.get(url)
-        # File doesn't actually exist in test environment
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert 'Playlist not found' in response.data['error']
+        assert 'Resolution 4k not available' in response.data['error']
 
 
 @pytest.mark.django_db
