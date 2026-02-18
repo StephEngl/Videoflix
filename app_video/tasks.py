@@ -3,7 +3,6 @@ import shutil
 import subprocess
 from django.db import transaction
 from django.conf import settings
-from django.core.files import File
 from django_rq import job
 from app_video.models import Video
 
@@ -11,7 +10,8 @@ from app_video.models import Video
 @job
 @transaction.atomic
 def convert_video_to_hls(video_id, resolution, scale, video_bitrate, audio_bitrate):
-    """Convert video to specific HLS resolution using FFmpeg.
+    """
+    Convert video to specific HLS resolution using FFmpeg.
     
     Args:
         video_id (int): ID of the video to convert.
@@ -30,8 +30,7 @@ def convert_video_to_hls(video_id, resolution, scale, video_bitrate, audio_bitra
             video.save()
         
         input_path = video.original_video.path
-        output_dir = os.path.join(settings.MEDIA_ROOT, 'videos', 'hls', str(video.id))
-        resolution_dir = os.path.join(output_dir, resolution)
+        resolution_dir = os.path.join(video.hls_directory, resolution)
         os.makedirs(resolution_dir, exist_ok=True)
                  
         cmd = [
@@ -50,86 +49,68 @@ def convert_video_to_hls(video_id, resolution, scale, video_bitrate, audio_bitra
             
         subprocess.run(cmd, check=True)
         
-        setattr(video, f'hls_{resolution}_path', f'videos/hls/{video.id}/{resolution}/index.m3u8')
+        rel_path = f'videos/{video.id}/hls/{resolution}/index.m3u8'
+        setattr(video, f'hls_{resolution}_path', rel_path)
         video.save()
-        
-        print(f"HLS conversion completed for {resolution}: Video {video_id}")   
         
     except Exception as error:
         video = Video.objects.get(id=video_id)
         video.processing_status = 'failed'
         video.save()
-        print(f"HLS conversion failed for {resolution}: Video {video_id}")
         raise error
 
 
 @job
 @transaction.atomic
 def create_thumbnail(video_id):
-    """Create thumbnail image for video using FFmpeg.
+    """
+    Create thumbnail image for video using FFmpeg.
     
     Args:
         video_id (int): ID of the video to create thumbnail for.
-        
-    Raises:
-        Exception: If thumbnail creation fails.
-        
-    Returns:
-        None: Function completes successfully or raises exception.
     """
     try:
         video = Video.objects.select_for_update().get(id=video_id)
         
         if video.thumbnail:
-            print(f"Thumbnail already exists for video {video_id}")
             return
         
         input_path = video.original_video.path
-        thumbnail_dir = os.path.join(settings.MEDIA_ROOT, 'videos', 'thumbnails', str(video.id))
-        os.makedirs(thumbnail_dir, exist_ok=True)
-        thumbnail_path = os.path.join(thumbnail_dir, 'thumbnail.jpg')
+        thumbnail_path = video.thumbnail_path
+        os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
         
         cmd = [
             'ffmpeg',
             '-i', input_path,
-            '-ss', '00:00:01',
+            '-ss', '00:00:10',
             '-vframes', '1',
             '-q:v', '2',
             thumbnail_path
         ]
-        
         subprocess.run(cmd, check=True)
         
-        with open(thumbnail_path, 'rb') as f:
-            video.thumbnail.save(f'{video.id}/thumbnail.jpg', File(f), save=True)
-        
-        print(f"Thumbnail created for video {video_id}")
-        
+        video.thumbnail.name = f'videos/{video.id}/thumbnail.jpg'
+        video.save(update_fields=['thumbnail'])
+                
     except Exception as error:
-        print(f"Thumbnail creation failed for video {video_id}: {error}")
         raise error
 
 
 @job
 @transaction.atomic
 def create_master_playlist(video_id):
-    """Create HLS master playlist with all available resolutions.
+    """
+    Create HLS master playlist with all available resolutions.
     
     Args:
         video_id (int): ID of the video to create master playlist for.
-        
-    Raises:
-        Exception: If master playlist creation fails.
-        
-    Returns:
-        None: Function completes successfully or raises exception.
     """
     try:
         video = Video.objects.select_for_update().get(id=video_id)
         
-        output_dir = os.path.join(settings.MEDIA_ROOT, 'videos', 'hls', str(video.id))
-        master_playlist_path = os.path.join(output_dir, 'master.m3u8')
-        
+        master_playlist_path = os.path.join(video.hls_directory, 'master.m3u8')
+        os.makedirs(os.path.dirname(master_playlist_path), exist_ok=True)
+
         playlist_content = "#EXTM3U\n#EXT-X-VERSION:3\n\n"
         
         resolutions_info = [
@@ -139,7 +120,7 @@ def create_master_playlist(video_id):
         ]
         
         for resolution, resolution_str, bandwidth in resolutions_info:
-            hls_path = getattr(video, f'hls_{resolution}_path', None)
+            hls_path = video.get_hls_path(resolution)
             if hls_path:
                 playlist_content += f"#EXT-X-STREAM-INF:BANDWIDTH={bandwidth},RESOLUTION={resolution_str}\n"
                 playlist_content += f"{resolution}/index.m3u8\n\n"
@@ -150,44 +131,36 @@ def create_master_playlist(video_id):
         video.processing_status = 'completed'
         video.is_processed = True
         video.save()
-        
-        print(f"Master playlist created for video {video_id}")
-        
+                
     except Exception as error:
         video = Video.objects.get(id=video_id)
         video.processing_status = 'failed'
         video.save()
-        print(f"Master playlist creation failed for video {video_id}: {error}")
         raise error
 
 
 
 @job
-def cleanup_deleted_video_files(video_id, file_paths):
-    """Clean up all video-related files and directories.
-    
-    Args:
-        video_id (int): ID of the deleted video.
-        file_paths (list): List of file and directory paths to remove.
-        
-    Raises:
-        Exception: If file cleanup fails.
-        
-    Returns:
-        None: Function completes successfully or raises exception.
+def cleanup_deleted_video_files(video_id):
     """
+    Delete complete video directory for post_delete signals.
+    
+    Safe: tries model first, then direct path.
+    """
+    paths_to_try = []
+    
     try:
-        for file_path in file_paths:
-            if os.path.exists(file_path):
-                if os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-                    print(f"Removed directory: {file_path}")
-                else:
-                    os.remove(file_path)
-                    print(f"Removed file: {file_path}")
-        
-        print(f"File cleanup completed for video {video_id}")
-        
-    except Exception as error:
-        print(f"File cleanup failed for video {video_id}: {error}")
-        raise error
+        video = Video.objects.get(id=video_id)
+        try:
+            paths_to_try.append(video.media_directory)
+        except Exception:
+            pass
+    except Video.DoesNotExist:
+        pass
+    
+    direct_path = os.path.join(str(getattr(settings, "MEDIA_ROOT", "")), "videos", str(video_id))
+    paths_to_try.append(direct_path)
+    
+    for path in paths_to_try:
+        if path and os.path.exists(path):
+            shutil.rmtree(path)
