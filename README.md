@@ -1,6 +1,7 @@
+
 # Videoflix Django Project
 
-Videoflix is a comprehensive video streaming platform that provides seamless video upload, processing, and streaming capabilities. Built with Django and powered by FFmpeg, Videoflix offers an innovative solution for video content management with adaptive streaming technology. Key features include automatic HLS video conversion in multiple resolutions, secure user authentication with JWT tokens, thumbnail generation, and a robust REST API for modern web applications.
+Videoflix is a video streaming platform that provides video upload, processing, and streaming capabilities. Built with Django and powered by FFmpeg, Videoflix offers an innovative solution for video content management with adaptive streaming technology. Key features include automatic HLS video conversion in multiple resolutions, secure user authentication with JWT tokens, thumbnail generation, and a robust REST API for modern web applications.
 
 ## ✨ Features
 
@@ -24,6 +25,7 @@ Videoflix is a comprehensive video streaming platform that provides seamless vid
 - **PostgreSQL** - Production database
 - **Docker** - Containerization and deployment
 - **JWT** - Token-based authentication
+- **pytest** - Python testing framework
 
 ## 🚀 Getting Started
 
@@ -31,6 +33,7 @@ Follow these steps to set up and run the project using Docker.
 
 ### ⚙️ Prerequisites
 
+- VS Code with Dev Containers Extension (ms-vscode-remote.remote-containers)
 - Docker & Docker Compose
 - Git
 
@@ -50,76 +53,25 @@ Follow these steps to set up and run the project using Docker.
    Update the variables in your .env file!
 
 3. **Build and start the containers**
-   ```bash
-   # For development
-   docker-compose -f docker-compose.yml -f docker-compose.development-override.yml up --build
 
-   # For production
+   **For development**
+   
+   VS Code Command Palette: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
+   
+   Dev Containers: Rebuild and Reopen in Container
+   
+   <img width="792" height="121" alt="image" src="https://github.com/user-attachments/assets/f2bb92af-ce6c-4381-aa97-56025c967af4" />
+
+   **For production**
+   
+   ```bash
    docker-compose up --build
    ```
 
-4. **Access the application**
+5. **Access the application**
    - API: http://localhost:8000
    - Admin Panel: http://localhost:8000/admin
    - API Documentation: http://localhost:8000/api/schema/swagger-ui/
-
-### 🐳 Docker Commands
-Development Environment:
-   ```bash
-   # Start development environment
-   docker-compose -f docker-compose.yml -f docker-compose.development-override.yml up -d
-
-   # View logs
-   docker-compose logs -f web
-
-   # Execute commands in container
-   docker-compose exec web python manage.py shell
-
-   # Stop containers
-   docker-compose down
-   ```
-
-Production Environment:
-```bash
-# Start production environment
-docker-compose up -d
-
-# Monitor containers
-docker-compose ps
-
-# Restart services
-docker-compose restart
-
-# Update and rebuild
-docker-compose up --build -d
-```
-Database Management:
-```bash
-# Run migrations
-docker-compose exec web python manage.py migrate
-
-# Create superuser
-docker-compose exec web python manage.py createsuperuser
-
-# Access database
-docker-compose exec db psql -U videoflix_user -d videoflix_db
-```
-
-## 📚 API Documentation
-
-This project includes automatically generated API documentation with Swagger UI and Redoc.
-
-**The OpenAPI schema is available at:**
-- `/api/schema/`
-
-**Interactive Swagger UI can be accessed at:**
-- `/api/schema/swagger-ui/`  
-  Use this web interface to explore and test the API endpoints easily.
-
-**Alternative documentation with Redoc is available at:**
-- `/api/schema/redoc/`
-
-These endpoints are integrated using drf-spectacular and configured in the Django URL patterns for convenient API exploration during development and testing.
 
 ## 📁 Project Structure
 
@@ -155,6 +107,41 @@ These endpoints are integrated using drf-spectacular and configured in the Djang
 6. **File Cleanup**: Automatic cleanup of video files when videos are deleted
 7. **Streaming**: Users can stream videos through HLS-compatible players
 
+## 🎬 Video Processing Pipeline
+
+1. **Upload**: Video uploaded to `media/videos/original/`
+2. **Signal Trigger**: Post-save signal starts background processing
+3. **HLS Conversion**: Multiple resolution conversions run in parallel
+4. **Thumbnail Creation**: Thumbnail generated from video frame at 1 second
+5. **Master Playlist**: Combined playlist created for all resolutions
+6. **Status Update**: Video marked as processed and available for streaming
+
+## 📚 API Documentation
+
+This project includes automatically generated API documentation with Swagger UI and Redoc.
+
+**The OpenAPI schema is available at:**
+- `/api/schema/`
+
+**Interactive Swagger UI can be accessed at:**
+- `/api/schema/swagger-ui/`  
+  Use this web interface to explore and test the API endpoints easily.
+
+**Alternative documentation with Redoc is available at:**
+- `/api/schema/redoc/`
+
+These endpoints are integrated using drf-spectacular and configured in the Django URL patterns for convenient API exploration during development and testing.
+
+
+## 🔧 Configuration
+
+For more details about project configuration, see:
+- [core/settings.py](core/settings.py) - Django settings and configurations
+- [docker-compose.yml](docker-compose.yml) - Production Docker configuration
+- [docker-compose.development-override.yml](docker-compose.development-override.yml) - Development overrides
+- [requirements.txt](requirements.txt) - Python dependencies
+- [backend.Dockerfile](backend.Dockerfile) - Docker image configuration
+
 ## 🔒 Security Information
 
 - **Secret Key**: Never share your Django SECRET_KEY. Use environment variables for production.
@@ -167,41 +154,6 @@ These endpoints are integrated using drf-spectacular and configured in the Djang
 - **Environment Files**: Ensure .env files are not committed to version control.
 - **User Enumeration**: Registration endpoint prevents email enumeration attacks.
 - **File Security**: Uploaded files are validated and stored securely.
-
-## 🧪 Running Tests
-
-Run the comprehensive test suite to ensure everything works correctly:
-
-```bash
-# Run tests in Docker container
-docker-compose exec web python manage.py test
-
-# Run specific app tests
-docker-compose exec web python manage.py test app_video
-docker-compose exec web python manage.py test app_auth
-
-# Run with coverage analysis
-docker-compose exec web coverage run --source='.' manage.py test
-docker-compose exec web coverage report
-```
-
-## 🔧 Management Commands
-
-The project includes custom management commands for maintenance:
-
-```bash
-# Send test emails
-docker-compose exec web python manage.py send_test_email
-```
-
-## 🎬 Video Processing Pipeline
-
-1. **Upload**: Video uploaded to `media/videos/original/`
-2. **Signal Trigger**: Post-save signal starts background processing
-3. **HLS Conversion**: Multiple resolution conversions run in parallel
-4. **Thumbnail Creation**: Thumbnail generated from video frame at 1 second
-5. **Master Playlist**: Combined playlist created for all resolutions
-6. **Status Update**: Video marked as processed and available for streaming
 
 ## 👥 Contributing
 
@@ -216,40 +168,6 @@ Contributions are welcome! Here's how you can help:
 7. Open a pull request
 
 Please ensure your code follows Django best practices and includes appropriate tests.
-
-## 🔧 Configuration
-
-For more details about project configuration, see:
-- [core/settings.py](core/settings.py) - Django settings and configurations
-- [docker-compose.yml](docker-compose.yml) - Production Docker configuration
-- [docker-compose.development-override.yml](docker-compose.development-override.yml) - Development overrides
-- [requirements.txt](requirements.txt) - Python dependencies
-- [backend.Dockerfile](backend.Dockerfile) - Docker image configuration
-
-## 📊 Monitoring & Maintenance
-
-**Container Health:**
-```bash
-# Check container status
-docker-compose ps
-
-# View resource usage
-docker stats
-
-# Check logs
-docker-compose logs -f web
-docker-compose logs -f redis
-docker-compose logs -f db
-```
-
-**Database Backup:**
-```bash
-# Create database backup
-docker-compose exec db pg_dump -U videoflix_user videoflix_db > backup.sql
-
-# Restore database backup
-docker-compose exec -T db psql -U videoflix_user -d videoflix_db < backup.sql
-```
 
 ## 📄 License
 
