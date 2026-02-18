@@ -82,7 +82,7 @@ def create_thumbnail(video_id):
         cmd = [
             'ffmpeg',
             '-i', input_path,
-            '-ss', '00:00:10',
+            '-ss', '00:00:03',
             '-vframes', '1',
             '-q:v', '2',
             thumbnail_path
