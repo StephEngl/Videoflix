@@ -113,7 +113,7 @@ Follow these steps to set up and run the project using Docker.
 
 1. **Upload**: Video uploaded to `media/videos/original/`
 2. **Signal Trigger**: Post-save signal starts background processing
-3. **HLS Conversion**: Multiple resolution conversions are processed sequentially
+3. **HLS Conversion**: Multiple resolution conversions run in parallel
 4. **Thumbnail Creation**: Thumbnail generated from video frame at 1 second
 5. **Master Playlist**: Combined playlist created for all resolutions
 6. **Status Update**: Video marked as processed and available for streaming
