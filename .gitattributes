@@ -5,3 +5,4 @@ text eol=lf
 *.css text=lf
 *.json text=lf
 *.md text=lf
+*.sh text eol=lf
