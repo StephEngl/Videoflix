@@ -59,7 +59,7 @@ class EmailService:
         if not user.is_active:
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            link = f"{getattr(settings, 'BACKEND_URL')}/api/activate/{uid}/{token}/"
+            link = f"{getattr(settings, 'FRONTEND_URL', 'http://127.0.0.1:5500')}/pages/auth/activate.html?uid={uid}&token={token}"
             
             EmailService.send_email(
                 user=user,
@@ -86,7 +86,7 @@ class EmailService:
             user = User.objects.get(email__iexact=email.strip())
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            link = f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:5500')}/pages/auth/confirm_password.html?uid={uid}&token={token}"
+            link = f"{getattr(settings, 'FRONTEND_URL', 'http://127.0.0.1:5500')}/pages/auth/confirm_password.html?uid={uid}&token={token}"
             
             if not user.is_active:
                 subject = "Activate and reset your Videoflix password"

@@ -107,9 +107,9 @@ class ActivateAccountView(APIView):
         result = AuthService.activate_user(uidb64, token)
 
         if result['success']:
-            return redirect(f"{settings.FRONTEND_URL}?activation=success")
+            return Response({'message': result['message']}, status=status.HTTP_200_OK)
         else:
-            return redirect(f"{settings.FRONTEND_URL}?activation=error")
+            return Response({'error': result['error']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
