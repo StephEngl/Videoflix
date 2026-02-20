@@ -59,7 +59,7 @@ class EmailService:
         if not user.is_active:
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            link = f"{getattr(settings, 'BACKEND_URL', 'http://localhost:8000')}/api/activate/{uid}/{token}/"
+            link = f"{getattr(settings, 'BACKEND_URL')}/api/activate/{uid}/{token}/"
             
             EmailService.send_email(
                 user=user,
