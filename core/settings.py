@@ -184,12 +184,12 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
 # URLs
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5500')
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://127.0.0.1:5500')
+BACKEND_URL = os.getenv('BACKEND_URL')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'app_auth.authentication.CookieJWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
