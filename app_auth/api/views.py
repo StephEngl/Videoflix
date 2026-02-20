@@ -4,8 +4,10 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.shortcuts import redirect
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
+from django.shortcuts import redirect
 from .serializers import RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from ..services import EmailService, AuthService
 from ..authentication import CookieJWTAuthentication
@@ -140,6 +142,7 @@ class ActivateAccountView(APIView):
         400: OpenApiResponse(description="Bad Request - Invalid credentials"),
     }
 )
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class LoginView(TokenObtainPairView):
     """API view for user authentication with cookie-based tokens.
     
