@@ -100,9 +100,6 @@ class ActivateAccountView(APIView):
             request: HTTP request.
             uidb64: Base64 encoded user ID.
             token: Activation token.
-            
-        Returns:
-            HttpResponseRedirect: Redirect to frontend with activation status.
         """
         result = AuthService.activate_user(uidb64, token)
 
